@@ -3,6 +3,7 @@ Config = {}
 Config.Debug = false
 Config.Core = "QBX" -- QB,ESX or QBX
 Config.OpenPhone = 'M'
+Config.UnlockScreenKey = 19 -- Tecla ALT para toggle destravar/travar (19 = ALT, 20 = Z, 21 = SHIFT)
 Config.RepeatTimeout = 3000
 Config.CallRepeats = 5
 

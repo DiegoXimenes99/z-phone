@@ -4,7 +4,11 @@ local function GenerateCallId(caller, target)
 end
 
 RegisterNUICallback('start-call', function(body, cb)
+    print("^3[Z-PHONE DEBUG] start-call callback iniciado")
+    print("^3[Z-PHONE DEBUG] body recebido:", json.encode(body))
+    
     if PhoneData.CallData.InCall then
+        print("^1[Z-PHONE DEBUG] Já está em uma ligação")
         TriggerEvent("z-phone:client:sendNotifInternal", {
             type = "Notification",
             from = "Phone",
@@ -15,6 +19,7 @@ RegisterNUICallback('start-call', function(body, cb)
     end
 
     if not IsAllowToSendOrCall() then
+        print("^1[Z-PHONE DEBUG] Não permitido enviar/ligar (zona sem sinal)")
         TriggerEvent("z-phone:client:sendNotifInternal", {
             type = "Notification",
             from = Config.App.InetMax.Name,
@@ -24,7 +29,21 @@ RegisterNUICallback('start-call', function(body, cb)
         return
     end
     
+    if not IsProfileLoaded() then
+        print("^1[Z-PHONE DEBUG] Profile não carregado")
+        TriggerEvent("z-phone:client:sendNotifInternal", {
+            type = "Notification",
+            from = "Phone",
+            message = "Profile not loaded, try again"
+        })
+        cb(false)
+        return
+    end
+    
+    print("^2[Z-PHONE DEBUG] Profile carregado:", json.encode(Profile))
+    
     if Profile.inetmax_balance < Config.App.InetMax.InetMaxUsage.PhoneCall then
+        print("^1[Z-PHONE DEBUG] Saldo insuficiente:", Profile.inetmax_balance, "necessário:", Config.App.InetMax.InetMaxUsage.PhoneCall)
         TriggerEvent("z-phone:client:sendNotifInternal", {
             type = "Notification",
             from = Config.App.InetMax.Name,

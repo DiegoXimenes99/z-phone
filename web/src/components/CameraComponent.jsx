@@ -6,6 +6,7 @@ import axios from "axios";
 
 const CameraComponent = ({ isShow }) => {
   const { setMenu } = useContext(MenuContext);
+  const [isPhotoTaken, setIsPhotoTaken] = useState(false);
 
   function hide() {
     const container = document.getElementById("z-phone-root-frame");
@@ -24,19 +25,22 @@ const CameraComponent = ({ isShow }) => {
   }
 
   const takePhoto = async () => {
+    console.log('[CAMERA] Taking photo...');
     hide();
     await axios.post("/close");
     await axios
       .post("/TakePhoto")
       .then(async function (response) {
+        console.log('[CAMERA] Photo response:', response.data);
         if (response.data != "" && response.data != null) {
           savePhoto(response.data);
         } else {
+          console.log('[CAMERA] No photo data, going to default menu');
           setMenu(MENU_DEFAULT);
         }
       })
       .catch(function (error) {
-        console.log(error);
+        console.log('[CAMERA] Error taking photo:', error);
       })
       .finally(function () {
         show();
@@ -44,11 +48,14 @@ const CameraComponent = ({ isShow }) => {
   };
 
   const savePhoto = async (url) => {
+    console.log('[CAMERA] Saving photo:', url);
     await axios
       .post("/save-photos", { url: url })
-      .then(function (response) {})
+      .then(function (response) {
+        console.log('[CAMERA] Photo saved successfully');
+      })
       .catch(function (error) {
-        console.log(error);
+        console.log('[CAMERA] Error saving photo:', error);
       })
       .finally(function () {
         show();
@@ -57,8 +64,11 @@ const CameraComponent = ({ isShow }) => {
   };
 
   useEffect(() => {
-    if (isShow) {
+    if (isShow && !isPhotoTaken) {
+      setIsPhotoTaken(true);
       takePhoto();
+    } else if (!isShow) {
+      setIsPhotoTaken(false);
     }
   }, [isShow]);
 

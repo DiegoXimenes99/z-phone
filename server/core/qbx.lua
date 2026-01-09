@@ -1,23 +1,32 @@
 if Config.Core == "QBX" then 
+    print("^3[Z-PHONE] Inicializando xCore para QBX...")
     xCore = {}
     local QBX = exports["qb-core"]:GetCoreObject()
     local ox_inventory = exports.ox_inventory
 
     xCore.GetPlayerBySource = function(source)
         local ply = QBX.Functions.GetPlayer(source)
-        if not ply then return nil end
+        if not ply or not ply.PlayerData then 
+            print("^1[Z-PHONE] Player ou PlayerData não encontrado para source: " .. tostring(source))
+            return nil 
+        end
+
+        if not ply.PlayerData.citizenid then
+            print("^1[Z-PHONE] CitizenID não encontrado para source: " .. tostring(source))
+            return nil
+        end
 
         return {
             source = ply.PlayerData.source,
             citizenid = ply.PlayerData.citizenid,
-            name = ply.PlayerData.charinfo.firstname .. ' '.. ply.PlayerData.charinfo.lastname,
+            name = (ply.PlayerData.charinfo.firstname or "") .. ' '.. (ply.PlayerData.charinfo.lastname or ""),
             job = {
-                name = ply.PlayerData.job.name,
-                label = ply.PlayerData.job.label
+                name = ply.PlayerData.job.name or "unemployed",
+                label = ply.PlayerData.job.label or "Unemployed"
             },
             money = {
-                cash = ply.PlayerData.money.cash,
-                bank = ply.PlayerData.money.bank,
+                cash = ply.PlayerData.money.cash or 0,
+                bank = ply.PlayerData.money.bank or 0,
             },
             removeCash = function (amount)
                 ply.Functions.RemoveMoney('cash', amount)
@@ -26,7 +35,7 @@ if Config.Core == "QBX" then
                 ply.Functions.RemoveMoney(account, amount, reason)
             end,
             addAccountMoney = function (account, amount, reason)
-                ply.Functions.RemoveMoney(account, amount, reason)
+                ply.Functions.AddMoney(account, amount, reason)
             end
         }
     end
@@ -53,13 +62,16 @@ if Config.Core == "QBX" then
                 ply.Functions.RemoveMoney(account, amount, reason)
             end,
             addAccountMoney = function (account, amount, reason)
-                ply.Functions.RemoveMoney(account, amount, reason)
+                ply.Functions.AddMoney(account, amount, reason)
             end
         }
     end
 
     xCore.HasItemByName = function(source, item)
-        return ox_inventory:GetItem(source, item, nil, false).count >= 1
+        local success, result = pcall(function()
+            return ox_inventory:GetItem(source, item, nil, false).count >= 1
+        end)
+        return success and result or false
     end
 
     xCore.AddMoneyBankSociety = function(society, amount, reason)
@@ -84,7 +96,6 @@ if Config.Core == "QBX" then
     end
 
     xCore.queryPlayerHouses = function()
-        -- ADJUST QUERY FROM YOUR TABLE HOUSING
         local query = [[
             SELECT 
                 hl.id,
@@ -132,44 +143,17 @@ if Config.Core == "QBX" then
     end
 
     xCore.bankInvoices = function(citizenid)
-        -- local query = [[
-        --     select
-        --         pi.id,
-        --         pi.society,
-        --         '-' as reason,
-        --         pi.amount,
-        --         pi.sendercitizenid,
-        --         DATE_FORMAT(now(), '%d/%m/%Y %H:%i') as created_at
-        --     from phone_invoices as pi
-        --     where pi.citizenid = ? order by pi.id desc
-        -- ]]
-
-        -- local bills = MySQL.query.await(querybill, { citizenid })
-
-        -- if not histories then
-        --     bills = {}
-        -- end
-
-        -- return bills
         return {}
     end
 
     xCore.bankInvoiceByCitizenID = function(id, citizenid)
-        -- local query = [[
-        --     select pi.id, pi.amount, pi.reason, pi.society, pi.amount from phone_invoices pi WHERE pi.id = ? and pi.citizenid = ? LIMIT 1
-        -- ]]
-
-        -- return MySQL.single.await(query, {id, citizenid})
-        lib.print.info("CHANGE THIS CODE TO USE INVOICE bankInvoiceByCitizenID")
+        print("^3[Z-PHONE] bankInvoiceByCitizenID não implementado")
         return nil
     end
 
     xCore.deleteBankInvoiceByID = function(id)
-        lib.print.info("CHANGE THIS CODE TO USE INVOICE deleteBankInvoiceByID")
-
-        -- local query = [[
-        --     DELETE FROM phone_invoices WHERE id = ?
-        -- ]]
-        -- MySQL.query(query, { id })
+        print("^3[Z-PHONE] deleteBankInvoiceByID não implementado")
     end
+    
+    print("^2[Z-PHONE] xCore inicializado com sucesso para QBX")
 end

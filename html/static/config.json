@@ -2,12 +2,38 @@
   "name": "Kota V",
   "timezone": "Asia/Jakarta",
   "logo": "./images/kota-v.png",
-  "LATEST_NEWS": {
-    "AUTHOR": "Reporter",
-    "IMG_URL": "https://i.ytimg.com/vi/0GZKDlppO2g/maxresdefault.jpg",
-    "content": "In an alarming turn of events, Los Santos has seen a dramatic rise in criminal activity over the past week, leaving residents and law enforcement on high alert.",
-    "more_updates": "Please come to the reporter's office and stay tuned for updates as this story develops."
-  },
+  "LATEST_NEWS": [
+    {
+      "AUTHOR": "Reporter Central",
+      "IMG_URL": "https://i.ytimg.com/vi/0GZKDlppO2g/maxresdefault.jpg",
+      "content": "Em uma reviravolta alarmante, Los Santos viu um aumento dramático na atividade criminosa na semana passada, deixando moradores e policiais em alerta máximo.",
+      "more_updates": "Venha ao escritório do repórter e fique atento às atualizações conforme esta história se desenvolve."
+    },
+    {
+      "AUTHOR": "News Network",
+      "IMG_URL": "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800",
+      "content": "O prefeito de Los Santos anunciou hoje um novo plano de investimento em infraestrutura que promete revolucionar o transporte público da cidade.",
+      "more_updates": "Mais detalhes serão divulgados na coletiva de imprensa desta tarde."
+    },
+    {
+      "AUTHOR": "Sports Today",
+      "IMG_URL": "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800",
+      "content": "O time local de Los Santos conquistou uma vitória histórica no campeonato estadual, levando milhares de torcedores às ruas para comemorar.",
+      "more_updates": "Cobertura completa da celebração e entrevistas exclusivas com os jogadores."
+    },
+    {
+      "AUTHOR": "Weather Center",
+      "IMG_URL": "https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?w=800",
+      "content": "Meteorologistas alertam para uma frente fria que deve atingir Los Santos nos próximos dias, com possibilidade de chuvas intensas.",
+      "more_updates": "Recomendações de segurança e preparação para os moradores da região."
+    },
+    {
+      "AUTHOR": "Tech News",
+      "IMG_URL": "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800",
+      "content": "Uma nova startup de tecnologia em Los Santos desenvolveu um aplicativo inovador que promete facilitar a vida dos cidadãos locais.",
+      "more_updates": "Entrevista exclusiva com os fundadores e demonstração do aplicativo."
+    }
+  ],
   "INETMAX": {
     "IS_DISABLE_TOPUP": false,
     "PRICE_PER_GB": 100,

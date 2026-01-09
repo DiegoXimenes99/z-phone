@@ -1,21 +1,10 @@
 local frontCam = false
 
-local function SaveToInternalGallery()
-    BeginTakeHighQualityPhoto()
-    SaveHighQualityPhoto(0)
-    FreeMemoryForHighQualityPhoto()
-end
-
 local function CellFrontCamActivate(activate)
     return Citizen.InvokeNative(0x2491A93618B7D838, activate)
 end
 
 RegisterNUICallback('TakePhoto', function(_, cb)
-    -- SendNUIMessage({
-    --     event = 'z-phone',
-    --     isOpen = false,
-    -- })
-    
     SetNuiFocus(false, false)
     CreateMobilePhone(1)
     CellCamActivate(true, true)
@@ -30,19 +19,43 @@ RegisterNUICallback('TakePhoto', function(_, cb)
             cb(nil)
             break
         elseif IsControlJustPressed(1, 176) then -- TAKE.. PIC
+            print('[Z-PHONE] Taking photo...')
+            
+            -- Primeiro tenta usar o webhook se estiver configurado
             lib.callback('z-phone:server:GetWebhook', false, function(hook)
-            if not hook then
-                    xCore.Notify('Camera not setup', 'error', 3000)
-                    return
+                if hook and hook ~= '' then
+                    print('[Z-PHONE] Using webhook for real photo capture')
+                    exports['screenshot-basic']:requestScreenshotUpload(tostring(hook), 'files[]', function(data)
+                        local success, result = pcall(json.decode, data)
+                        if success and result and result.attachments and result.attachments[1] then
+                            local photoUrl = result.attachments[1].proxy_url
+                            print('[Z-PHONE] Real photo captured via Discord: ' .. photoUrl)
+                            DestroyMobilePhone()
+                            CellCamActivate(false, false)
+                            cb(photoUrl)
+                            takePhoto = false
+                        else
+                            print('[Z-PHONE] Discord upload failed, using fallback')
+                            -- Fallback para sistema local
+                            lib.callback('z-phone:server:TakePhotoLocal', false, function(fallbackUrl)
+                                DestroyMobilePhone()
+                                CellCamActivate(false, false)
+                                cb(fallbackUrl)
+                                takePhoto = false
+                            end)
+                        end
+                    end)
+                else
+                    print('[Z-PHONE] No webhook configured, using local system')
+                    -- Usa sistema local se não houver webhook
+                    lib.callback('z-phone:server:TakePhotoLocal', false, function(photoUrl)
+                        print('[Z-PHONE] Local photo URL: ' .. tostring(photoUrl))
+                        DestroyMobilePhone()
+                        CellCamActivate(false, false)
+                        cb(photoUrl)
+                        takePhoto = false
+                    end)
                 end
-                exports['screenshot-basic']:requestScreenshotUpload(tostring(hook), 'files[]', function(data)
-                    SaveToInternalGallery()
-                    local image = json.decode(data)
-                    DestroyMobilePhone()
-                    CellCamActivate(false, false)
-                    cb(image.attachments[1].proxy_url)
-                    takePhoto = false
-                end)
             end)
         end
         HideHudComponentThisFrame(7)
@@ -55,7 +68,6 @@ RegisterNUICallback('TakePhoto', function(_, cb)
         Wait(0)
     end
     Wait(1000)
-    -- OpenPhone()
     SetNuiFocus(true, true)
     if not PhoneData.CallData.InCall then
         DoPhoneAnimation('cellphone_text_in')

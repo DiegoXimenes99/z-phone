@@ -1,8 +1,12 @@
 lib.callback.register('z-phone:server:StartOrContinueChatting', function(source, body)
     local Player = xCore.GetPlayerBySource(source)
-    if Player == nil then return nil end
+    if Player == nil then 
+        print('[Z-PHONE] Player not found for StartOrContinueChatting')
+        return nil 
+    end
 
     local citizenid = Player.citizenid
+    print('[Z-PHONE] StartOrContinueChatting - CitizenID: ' .. citizenid)
 
     if body.to_citizenid == citizenid then 
         TriggerClientEvent("z-phone:client:sendNotifInternal", source, {
@@ -14,6 +18,7 @@ lib.callback.register('z-phone:server:StartOrContinueChatting', function(source,
     end
 
     if body.phone_number then
+        print('[Z-PHONE] Looking for phone number: ' .. body.phone_number)
         local queryCheckUserTarget = [[
             select zpu.* from zp_users zpu WHERE zpu.phone_number = ? LIMIT 1
         ]]
@@ -22,6 +27,7 @@ lib.callback.register('z-phone:server:StartOrContinueChatting', function(source,
         })
 
         if not userTarget then
+            print('[Z-PHONE] Phone number not found: ' .. body.phone_number)
             TriggerClientEvent("z-phone:client:sendNotifInternal", source, {
                 type = "Notification",
                 from = "Message",
@@ -31,6 +37,7 @@ lib.callback.register('z-phone:server:StartOrContinueChatting', function(source,
         end
 
         body.to_citizenid = userTarget.citizenid
+        print('[Z-PHONE] Found target citizenid: ' .. body.to_citizenid)
     end
 
     if body.to_citizenid == citizenid then 
@@ -67,8 +74,11 @@ lib.callback.register('z-phone:server:StartOrContinueChatting', function(source,
         citizenid,
         body.to_citizenid
     })
+    
+    print('[Z-PHONE] Existing conversation ID: ' .. tostring(conversationid))
      
     if conversationid == nil then
+        print('[Z-PHONE] Creating new conversation')
         local queryNewConv = "INSERT INTO zp_conversations (is_group) VALUES (?)"
         conversationid = MySQL.insert.await(queryNewConv, {
             false,
@@ -80,10 +90,12 @@ lib.callback.register('z-phone:server:StartOrContinueChatting', function(source,
             citizenid,
         })
 
-        local participanOne = MySQL.insert.await(queryParticipant, {
+        local participanTwo = MySQL.insert.await(queryParticipant, {
             conversationid,
             body.to_citizenid,
         })
+        
+        print('[Z-PHONE] New conversation created with ID: ' .. conversationid)
     end
 
     local queryChatting = [[
@@ -127,10 +139,14 @@ lib.callback.register('z-phone:server:StartOrContinueChatting', function(source,
         conversationid,
         citizenid
     })
+    
+    print('[Z-PHONE] Chat result: ' .. tostring(result and 'found' or 'not found'))
      
     if result then 
+        print('[Z-PHONE] Returning conversation: ' .. result.conversation_name)
         return result
     else
+        print('[Z-PHONE] Failed to get conversation details')
         return nil
     end
 end)
@@ -221,29 +237,28 @@ lib.callback.register('z-phone:server:GetChatting', function(source, body)
 
     if Player ~= nil then
         local citizenid = Player.citizenid
+        
+        print('[Z-PHONE] Getting chat messages for conversation: ' .. tostring(body.conversationid))
+        
+        -- Query simples primeiro para testar
         local query = [[
             SELECT
-                * 
+                zpcm.id,
+                zpcm.content as message,
+                zpcm.media,
+                0 as audio_duration,
+                0 as is_audio,
+                DATE_FORMAT(zpcm.created_at, '%d %b %Y %H:%i') as time,
+                zpcm.sender_citizenid,
+                COALESCE(zpcm.is_deleted, 0) as is_deleted,
+                TIMESTAMPDIFF(MINUTE, zpcm.created_at, NOW()) AS minute_diff
             FROM
-                (
-                SELECT
-                    zpcm.id,
-                    zpcm.content as message,
-                    zpcm.media,
-                    DATE_FORMAT(zpcm.created_at, '%d %b %Y %H:%i') as time,
-                    zpcm.sender_citizenid,
-                    zpcm.is_deleted,
-                    TIMESTAMPDIFF(MINUTE, zpcm.created_at, NOW()) AS minute_diff
-                FROM
-                    zp_conversation_messages zpcm 
-                WHERE
-                    conversationid = ? 
-                ORDER BY
-                    id DESC 
-                    LIMIT 200 
-                ) AS subquery 
+                zp_conversation_messages zpcm 
+            WHERE
+                conversationid = ? 
             ORDER BY
-                id ASC;
+                id ASC
+            LIMIT 200;
         ]]
 
         local result = MySQL.query.await(query, {
@@ -251,11 +266,18 @@ lib.callback.register('z-phone:server:GetChatting', function(source, body)
         })
 
         if result then
+            print('[Z-PHONE] Found ' .. #result .. ' messages')
+            for i, msg in ipairs(result) do
+                print('[Z-PHONE] Message ' .. i .. ': ' .. tostring(msg.message) .. ' | Media: ' .. tostring(msg.media))
+            end
             return result
         else
+            print('[Z-PHONE] No messages found or query failed')
             return {}
         end
     end
+    
+    print('[Z-PHONE] Player not found')
     return {}
 end)
 
@@ -264,6 +286,9 @@ lib.callback.register('z-phone:server:SendChatting', function(source, body)
 
     if Player == nil then return false end
     local citizenid = Player.citizenid
+    
+    print('[Z-PHONE] Sending message - Media: ' .. tostring(body.media) .. ' Message: ' .. tostring(body.message))
+    
     local query = "INSERT INTO zp_conversation_messages (conversationid, sender_citizenid, content, media) VALUES (?, ?, ?, ?)"
 
     local id = MySQL.insert.await(query, {
@@ -273,7 +298,12 @@ lib.callback.register('z-phone:server:SendChatting', function(source, body)
         body.media,
     })
 
-    if not id then return false end
+    if not id then 
+        print('[Z-PHONE] Failed to insert message')
+        return false 
+    end
+
+    print('[Z-PHONE] Message sent successfully with ID: ' .. id)
 
     if not body.is_group then
         local contactName = MySQL.scalar.await([[
@@ -316,6 +346,142 @@ lib.callback.register('z-phone:server:SendChatting', function(source, body)
 
     return id
 end)
+
+-- Callback para enviar mensagens de áudio
+lib.callback.register('z-phone:server:SendAudioMessage', function(source, body)
+    local Player = xCore.GetPlayerBySource(source)
+
+    if Player == nil then return false end
+    local citizenid = Player.citizenid
+    
+    print('[Z-PHONE] Sending audio message - Duration: ' .. tostring(body.duration))
+    
+    -- Gerar nome único para o arquivo de áudio
+    local audioFileName = 'audio_' .. citizenid .. '_' .. os.time() .. '_' .. math.random(1000, 9999) .. '.webm'
+    local audioPath = GetResourcePath(GetCurrentResourceName()) .. '/html/sounds/messages/' .. audioFileName
+    local audioUrl = './sounds/messages/' .. audioFileName
+    
+    print('[Z-PHONE] Saving audio to: ' .. audioPath)
+    
+    -- Salvar o arquivo de áudio no servidor
+    local success = false
+    if body.audioData and body.audioData ~= "" then
+        -- Decodificar base64 e salvar como arquivo
+        local audioData = body.audioData
+        
+        -- Criar o diretório se não existir
+        local dir = GetResourcePath(GetCurrentResourceName()) .. '/html/sounds/messages/'
+        os.execute('mkdir "' .. dir .. '" 2>nul') -- Windows
+        
+        -- Salvar arquivo usando Lua
+        local file = io.open(audioPath, 'wb')
+        if file then
+            -- Converter base64 para binário (implementação simples)
+            local binaryData = base64Decode(audioData)
+            if binaryData then
+                file:write(binaryData)
+                file:close()
+                success = true
+                print('[Z-PHONE] Audio file saved successfully: ' .. audioFileName)
+            else
+                file:close()
+                print('[Z-PHONE] Failed to decode base64 audio data')
+            end
+        else
+            print('[Z-PHONE] Failed to create audio file: ' .. audioPath)
+        end
+    end
+    
+    -- Se não conseguiu salvar o arquivo, usar fallback
+    if not success then
+        print('[Z-PHONE] Using fallback - saving as text message')
+        audioUrl = '' -- URL vazia para indicar que é só texto
+    end
+    
+    -- Inserir mensagem no banco de dados
+    local query = "INSERT INTO zp_conversation_messages (conversationid, sender_citizenid, content, media, audio_duration, is_audio) VALUES (?, ?, ?, ?, ?, ?)"
+
+    local id = MySQL.insert.await(query, {
+        body.conversationid,
+        citizenid,
+        success and '' or '🎤 Audio message (' .. body.duration .. 's)', -- Se salvou arquivo, content vazio; senão, texto
+        audioUrl,
+        body.duration,
+        1 -- is_audio = true
+    })
+
+    if not id then 
+        print('[Z-PHONE] Failed to insert audio message')
+        return false 
+    end
+
+    print('[Z-PHONE] Audio message sent successfully with ID: ' .. id)
+
+    -- Notificar outros participantes
+    if not body.is_group then
+        local contactName = MySQL.scalar.await([[
+            SELECT
+            COALESCE(
+                (SELECT contact_name FROM zp_contacts WHERE citizenid = ? and contact_citizenid = ?),
+                (SELECT phone_number FROM zp_users WHERE citizenid = ?)
+            ) AS name
+        ]], { body.to_citizenid, citizenid, citizenid })
+        if contactName then
+            body.from = contactName
+            body.from_citizenid = citizenid
+            body.message = "🎤 Audio message"
+            local TargetPlayer = xCore.GetPlayerByIdentifier(body.to_citizenid)
+            if TargetPlayer ~= nil then
+                TriggerClientEvent("z-phone:client:sendNotifMessage", TargetPlayer.source, body)
+            end
+        end
+    else
+        local queryGetParticipants = [[
+            SELECT * FROM zp_conversation_participants WHERE conversationid = ?
+        ]]
+        local participans = MySQL.query.await(queryGetParticipants, {body.conversationid})
+    
+        if not participans then
+            return false
+        end
+
+        for i, v in pairs(participans) do
+            if v.citizenid ~= citizenid then
+                local TargetPlayer = xCore.GetPlayerByIdentifier(v.citizenid)
+                if TargetPlayer ~= nil then
+                    body.to_citizenid = v.citizenid
+                    body.from = body.conversation_name
+                    body.from_citizenid = citizenid
+                    body.message = "🎤 Audio message"
+                    TriggerClientEvent("z-phone:client:sendNotifMessage", TargetPlayer.source, body)
+                end
+            end
+        end
+    end
+
+    return {
+        messageId = id,
+        audioUrl = audioUrl,
+        success = success
+    }
+end)
+
+-- Função para decodificar base64 (implementação simples)
+function base64Decode(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r,f='',(b:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then return '' end
+        local c=0
+        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+        return string.char(c)
+    end))
+end
 
 lib.callback.register('z-phone:server:DeleteMessage', function(source, body)
     local Player = xCore.GetPlayerBySource(source)

@@ -27,6 +27,16 @@ RegisterNUICallback('send-tweet', function(body, cb)
         return
     end
 
+    if not IsProfileLoaded() then
+        TriggerEvent("z-phone:client:sendNotifInternal", {
+            type = "Notification",
+            from = "Phone",
+            message = "Profile not loaded, try again"
+        })
+        cb(false)
+        return
+    end
+
     if Profile.inetmax_balance < Config.App.InetMax.InetMaxUsage.LoopsPostTweet then
         TriggerEvent("z-phone:client:sendNotifInternal", {
             type = "Notification",
@@ -57,6 +67,16 @@ RegisterNUICallback('send-tweet-comments', function(body, cb)
             type = "Notification",
             from = Config.App.InetMax.Name,
             message = Config.MsgSignalZone
+        })
+        cb(false)
+        return
+    end
+    
+    if not IsProfileLoaded() then
+        TriggerEvent("z-phone:client:sendNotifInternal", {
+            type = "Notification",
+            from = "Phone",
+            message = "Profile not loaded, try again"
         })
         cb(false)
         return

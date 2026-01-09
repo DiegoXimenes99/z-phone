@@ -1,12 +1,12 @@
 import React, { useContext, useState } from "react";
-import { MENU_DEFAULT } from "../constant/menu";
+import { MENU_DEFAULT, MENU_MESSAGE_CHATTING } from "../constant/menu";
 import MenuContext from "../context/MenuContext";
 import { MdArrowBackIosNew, MdClose } from "react-icons/md";
 import LoadingComponent from "./LoadingComponent";
 import axios from "axios";
 
 const GalleryComponent = ({ isShow }) => {
-  const { resolution, setMenu, photos, setPhotos } = useContext(MenuContext);
+  const { resolution, setMenu, photos, setPhotos, previousMenu, setPreviousMenu, gallerySelectionMode, setGallerySelectionMode } = useContext(MenuContext);
   const [isShowModal, setIsShowModal] = useState(false);
   const [dataModal, setDataModal] = useState(null);
 
@@ -87,13 +87,18 @@ const GalleryComponent = ({ isShow }) => {
       <div className="absolute top-0 flex w-full justify-between py-2 bg-black pt-8 z-10">
         <div
           className="flex items-center px-2 text-blue-500 cursor-pointer"
-          onClick={() => setMenu(MENU_DEFAULT)}
+          onClick={() => {
+            const targetMenu = previousMenu === MENU_MESSAGE_CHATTING ? previousMenu : MENU_DEFAULT;
+            setPreviousMenu(null);
+            setGallerySelectionMode(false);
+            setMenu(targetMenu);
+          }}
         >
           <MdArrowBackIosNew className="text-lg" />
           <span className="text-xs">Back</span>
         </div>
         <span className="absolute left-0 right-0 m-auto text-sm text-white w-fit">
-          Photos
+          {gallerySelectionMode ? "Select Photo" : "Photos"}
         </span>
         <div className="flex items-center px-2 text-blue-500">
           {/* <MdEdit className='text-lg' /> */}
@@ -112,14 +117,28 @@ const GalleryComponent = ({ isShow }) => {
             {photos.map((v, i) => {
               return (
                 <div
-                  className="relative cursor-pointer"
+                  className={`relative cursor-pointer rounded-lg overflow-hidden ${
+                    gallerySelectionMode ? 'border-2 border-green-400 shadow-lg' : ''
+                  }`}
                   key={i}
                   onClick={() => {
-                    setIsShowModal(true);
-                    setDataModal(v);
+                    if (gallerySelectionMode) {
+                      // Send photo to chat
+                      if (window.sendMessageFromGallery) {
+                        window.sendMessageFromGallery(v.photo);
+                      }
+                      // Return to chat
+                      setGallerySelectionMode(false);
+                      setPreviousMenu(null);
+                      setMenu(MENU_MESSAGE_CHATTING);
+                    } else {
+                      // Normal gallery view
+                      setIsShowModal(true);
+                      setDataModal(v);
+                    }
                   }}
                 >
-                  <div className="absolute left-0 bottom-0 bg-gray-800 opacity-60 text-xss font-normal px-1 py-0.5 rounded-tr-lg">
+                  <div className="absolute left-0 bottom-0 bg-gray-800 opacity-60 text-xss font-normal px-1 py-0.5 rounded-tr-lg z-10">
                     {v.created_at}
                   </div>
                   <img
@@ -133,6 +152,13 @@ const GalleryComponent = ({ isShow }) => {
                       error.target.src = "./images/noimage.jpg";
                     }}
                   />
+                  {gallerySelectionMode && (
+                    <div className="absolute inset-0 bg-green-500 bg-opacity-30 flex items-center justify-center">
+                      <div className="bg-green-500 rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
+                        <span className="text-white text-sm font-bold">✓</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

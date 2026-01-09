@@ -28,6 +28,8 @@ lib.callback.register('z-phone:server:SavePhotos', function(source, body)
     local Player = xCore.GetPlayerBySource(source)
     if Player ~= nil then
         local citizenid = Player.citizenid
+        print('[Z-PHONE] Saving photo for citizen: ' .. citizenid .. ' URL: ' .. tostring(body.url))
+        
         local query = "INSERT INTO zp_photos (citizenid, media, location) VALUES (?, ?, ?)"
 
         local id = MySQL.insert.await(query, {
@@ -37,11 +39,14 @@ lib.callback.register('z-phone:server:SavePhotos', function(source, body)
         })
 
         if id then
+            print('[Z-PHONE] Photo saved successfully with ID: ' .. id)
             return true
         else
+            print('[Z-PHONE] Failed to save photo to database')
             return false
         end
     end
+    print('[Z-PHONE] Player not found for source: ' .. source)
     return false
 end)
 

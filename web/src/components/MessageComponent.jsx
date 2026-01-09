@@ -218,7 +218,7 @@ const MessageComponent = ({ isShow }) => {
             <div className="w-2"></div>
           </div>
 
-          {chats.map((v, i) => {
+          {Array.isArray(chats) && chats.map((v, i) => {
             if (v.last_message != null) {
               return (
                 <div

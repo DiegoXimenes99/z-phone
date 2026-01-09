@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useState } from "react";
-import { MENU_LOCKSCREEN, CFG_TIMEZONE } from "../constant/menu";
+import { MENU_LOCKSCREEN } from "../constant/menu";
 
 const MenuContext = createContext({
   time: "",
@@ -75,7 +75,7 @@ export const MenuProvider = ({ children }) => {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: CFG_TIMEZONE,
+    timeZone: "America/Sao_Paulo", // Timezone brasileiro
   };
   const jakartaTime = date.toLocaleString("en-US", options);
   const [resolution, setResolution] = useState({
@@ -117,6 +117,8 @@ export const MenuProvider = ({ children }) => {
   const [chats, setChats] = useState([]);
   const [chatsBk, setChatsBk] = useState([]);
   const [chatting, setChatting] = useState({});
+  const [previousMenu, setPreviousMenu] = useState(null);
+  const [gallerySelectionMode, setGallerySelectionMode] = useState(false);
   const [emails, setEmails] = useState([]);
   const [emailsBk, setEmailsBk] = useState([]);
   const [email, setEmail] = useState(null);
@@ -145,7 +147,7 @@ export const MenuProvider = ({ children }) => {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-        timeZone: CFG_TIMEZONE,
+        timeZone: "America/Sao_Paulo", // Timezone brasileiro
       };
 
       const formattedTime = date.toLocaleString("en-US", options);
@@ -184,6 +186,10 @@ export const MenuProvider = ({ children }) => {
         setChatsBk,
         chatting,
         setChatting,
+        previousMenu,
+        setPreviousMenu,
+        gallerySelectionMode,
+        setGallerySelectionMode,
         emails,
         setEmails,
         emailsBk,

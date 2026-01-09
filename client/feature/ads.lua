@@ -15,6 +15,16 @@ RegisterNUICallback('send-ads', function(body, cb)
         return
     end
     
+    if not IsProfileLoaded() then
+        TriggerEvent("z-phone:client:sendNotifInternal", {
+            type = "Notification",
+            from = "Phone",
+            message = "Profile not loaded, try again"
+        })
+        cb(false)
+        return
+    end
+    
     if Profile.inetmax_balance < Config.App.InetMax.InetMaxUsage.AdsPost then
         TriggerEvent("z-phone:client:sendNotifInternal", {
             type = "Notification",
